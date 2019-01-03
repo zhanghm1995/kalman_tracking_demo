@@ -197,6 +197,7 @@ int main(int argc, char** argv)
 
   ros::Publisher vis_marker_pub = node.advertise<Marker>("/viz/visualization_marker", 1);
   tf::TransformListener tran(ros::Duration(10));
+  tf::StampedTransform
   listener = &tran;
 
 //  // Subscriber
