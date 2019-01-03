@@ -7,6 +7,7 @@
 * References   :
 ======================================================================*/
 #include <vector>
+#include <algorithm>
 #include <ros/ros.h>
 #include <tf/LinearMath/Transform.h>
 #include <tf/transform_broadcaster.h>
@@ -44,6 +45,7 @@ void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
     obj.velo_pos.point.x = msg->list[i].velo_pose.point.x;
     obj.velo_pos.point.y = msg->list[i].velo_pose.point.y;
     obj.velo_pos.point.z = msg->list[i].velo_pose.point.z;
+    obj.orientation = msg->list[i].heading;
     obj_track_array.push_back(obj);
   }
 }
@@ -67,13 +69,16 @@ public:
       const darknet_ros_msgs::ImageWithBBoxesConstPtr& image_msg,
       const iv_dynamicobject_msgs::ObjectArrayConstPtr& obj_msg)
   {
+    double time_stamp = obj_msg->header.stamp.toSec();
+
     // Convert object array message to object track array type
-    ROS_WARN("Enter in syncCallback...");
+    ROS_WARN_STREAM("Enter in syncCallback..."<<std::setprecision(20)<<
+        lidar_msg->header.stamp.toSec()<<" "<<
+        image_msg->header.stamp.toSec()<<" "<<
+        obj_msg->header.stamp.toSec());
     ObjectTrackArray obj_track_array;
     toObjectTrackArray(obj_msg, obj_track_array);
 
-
-    double time_stamp = lidar_msg->header.stamp.toSec();
 
     // Transform coordinate
     if(!transformCoordinate(obj_track_array, time_stamp))
@@ -93,8 +98,7 @@ public:
     sensors_fusion::ObjectTrackArray object_track;
     getObjectTrackArray(object_track, time_stamp);
 
-    ROS_INFO_STREAM("Object track array size "<<object_track.size());
-    showTrackingArrow(vis_marker_pub_, object_track);
+    showTrackingArrow(vis_marker_pub_, object_track, time_stamp);
   }
 
   void getObjectTrackArray(sensors_fusion::ObjectTrackArray& track_array, double time_stamp)
@@ -123,6 +127,8 @@ public:
 
     track_msg.velocity = track.sta.x[2];
     track_msg.heading = track.sta.x[3];
+
+
     track_msg.width = track.geo.width;
     track_msg.length = track.geo.length;
     track_msg.height = track.geo.height;
@@ -137,6 +143,7 @@ public:
 
     ROS_INFO_STREAM("velocity is "<<track_msg.velocity<<" "<<
         "heading is "<<track_msg.heading<<" "<<
+        "orientation is "<<track_msg.orientation<<" "<<
         "length is "<<track_msg.length<<" "<<
         "width is "<<track_msg.width<<" "<<
         "height is "<<track_msg.height);
@@ -161,16 +168,18 @@ public:
   }
 
   void showTrackingArrow(ros::Publisher &pub,
-                         const ObjectTrackArray& obj_array)
+                         const ObjectTrackArray& obj_array,
+                         double time_stamp)
   {
     for(int i = 0; i < obj_array.size(); i++){
       visualization_msgs::Marker arrowsG;
-      arrowsG.lifetime = ros::Duration(0.2);
+//      arrowsG.lifetime = ros::Duration(0.2);
 
       if(obj_array[i].velocity < 0.5)//TODO: maybe add is_static flag member
         continue;
 
       arrowsG.header.frame_id = "world";
+      arrowsG.header.stamp = ros::Time(time_stamp);
       arrowsG.ns = "arrows";
       arrowsG.action = visualization_msgs::Marker::ADD;
       arrowsG.type =  visualization_msgs::Marker::ARROW;
@@ -184,10 +193,15 @@ public:
       double tyaw = obj_array[i].heading;
 
       // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
+#if 1
       arrowsG.pose.position.x = obj_array[i].world_pos.point.x;
       arrowsG.pose.position.y = obj_array[i].world_pos.point.y;
-      arrowsG.pose.position.z = 0.5;
-
+      arrowsG.pose.position.z = obj_array[i].world_pos.point.z + obj_array[i].height/2;
+#else
+      arrowsG.pose.position.x = obj_array[i].velo_pos.point.x;
+      arrowsG.pose.position.y = obj_array[i].velo_pos.point.y;
+      arrowsG.pose.position.z = obj_array[i].velo_pos.point.z + obj_array[i].height/2;
+#endif
       // convert from 3 angles to quartenion
       tf::Matrix3x3 obs_mat;
       obs_mat.setEulerYPR(tyaw, 0, 0); // yaw, pitch, roll
