@@ -12,6 +12,8 @@
 #include <tf/LinearMath/Transform.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
@@ -54,6 +56,7 @@ class TrackingProcess
 {
 public:
   TrackingProcess(ros::NodeHandle& node):
+    tfListener_(tfBuffer_),
     cloud_sub_(node, "/kitti/velo/pointcloud", 10),
     image_sub_(node, "/darknet_ros/image_with_bboxes", 10),
     object_array_sub_(node, "/detection/object_array", 10),
@@ -271,6 +274,9 @@ private:
   message_filters::Synchronizer<MySyncPolicy> sync_;
 
   tf::TransformListener listener;
+
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
 
   ros::Publisher vis_marker_pub_;
 
