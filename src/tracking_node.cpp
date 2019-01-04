@@ -115,19 +115,38 @@ public:
     track_msg.world_pos.point.y = track.sta.x[1];
     track_msg.world_pos.point.z = track.sta.z;
 
+//    try{
+//      listener.transformPoint("velo_link",
+//          track_msg.world_pos,
+//          track_msg.velo_pos);
+//    }
+//    catch(tf::TransformException& ex){
+//      ROS_ERROR("Received an exception trying to transform a point from"
+//          "\"velo_link\" to \"world\": %s", ex.what());
+//    }
+
+    track_msg.velocity = track.sta.x[2];
+    track_msg.heading = track.sta.x[3];
+
     try{
-      listener.transformPoint("velo_link",
-          track_msg.world_pos,
-          track_msg.velo_pos);
+      geometry_msgs::PoseStamped world_pose, velo_pose;
+      world_pose.header.frame_id = "world";
+      world_pose.header.stamp = ros::Time(time_stamp);
+      world_pose.pose.position = track_msg.world_pos.point;
+      world_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,track_msg.heading);
+      listener.transformPose("velo_link",
+          world_pose,
+          velo_pose);
+
+      track_msg.velo_pos.header.frame_id = "velo_link";
+      track_msg.velo_pos.header.stamp = world_pose.header.stamp;
+      track_msg.velo_pos.point = velo_pose.pose.position;
+      track_msg.heading = tf::getYaw(velo_pose.pose.orientation);
     }
     catch(tf::TransformException& ex){
       ROS_ERROR("Received an exception trying to transform a point from"
           "\"velo_link\" to \"world\": %s", ex.what());
     }
-
-    track_msg.velocity = track.sta.x[2];
-    track_msg.heading = track.sta.x[3];
-
 
     track_msg.width = track.geo.width;
     track_msg.length = track.geo.length;
@@ -152,18 +171,40 @@ public:
   bool transformCoordinate(sensors_fusion::ObjectTrackArray& obj_array, double time_stamp)
   {
     // Transform objects in camera and world frame
+//    try{
+//      for(size_t i = 0; i < obj_array.size(); ++i){
+//        obj_array[i].velo_pos.header.stamp = ros::Time(time_stamp);
+//        listener.transformPoint("world",
+//            obj_array[i].velo_pos,
+//            obj_array[i].world_pos);
+//      }
+//      return true;
+//    }
+//    catch(tf::TransformException& ex){
+//      ROS_ERROR("%s", ex.what());
+//      return false;
+//    }
+
     try{
       for(size_t i = 0; i < obj_array.size(); ++i){
-        obj_array[i].velo_pos.header.stamp = ros::Time(time_stamp);
-        listener.transformPoint("world",
-            obj_array[i].velo_pos,
-            obj_array[i].world_pos);
+        geometry_msgs::PoseStamped  velo_pose, world_pose;
+        velo_pose.header.frame_id = "velo_link";
+        velo_pose.header.stamp = ros::Time(time_stamp);
+        velo_pose.pose.position = obj_array[i].velo_pos.point;
+        velo_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,obj_array[i].orientation);
+        listener.waitForTransform("world", "velo_link", ros::Time(time_stamp),ros::Duration(1.0));
+        listener.transformPose("world",
+                        velo_pose,
+                        world_pose);
+        obj_array[i].world_pos.header.frame_id = "world";
+        obj_array[i].world_pos.header.stamp = velo_pose.header.stamp;
+        obj_array[i].world_pos.point = world_pose.pose.position;
+        obj_array[i].heading = tf::getYaw(world_pose.pose.orientation);
       }
-      return true;
     }
     catch(tf::TransformException& ex){
-      ROS_ERROR("%s", ex.what());
-      return false;
+      ROS_ERROR("Received an exception trying to transform a point from"
+          "\"velo_link\" to \"world\": %s", ex.what());
     }
   }
 
@@ -178,8 +219,8 @@ public:
       if(obj_array[i].velocity < 0.5)//TODO: maybe add is_static flag member
         continue;
 
-      arrowsG.header.frame_id = "world";
-      arrowsG.header.stamp = ros::Time(time_stamp);
+      arrowsG.header.frame_id = "velo_link";
+//      arrowsG.header.stamp = ros::Time(time_stamp);
       arrowsG.ns = "arrows";
       arrowsG.action = visualization_msgs::Marker::ADD;
       arrowsG.type =  visualization_msgs::Marker::ARROW;
@@ -193,7 +234,7 @@ public:
       double tyaw = obj_array[i].heading;
 
       // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
-#if 1
+#if 0
       arrowsG.pose.position.x = obj_array[i].world_pos.point.x;
       arrowsG.pose.position.y = obj_array[i].world_pos.point.y;
       arrowsG.pose.position.z = obj_array[i].world_pos.point.z + obj_array[i].height/2;
