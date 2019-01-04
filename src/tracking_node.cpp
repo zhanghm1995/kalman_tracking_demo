@@ -34,6 +34,15 @@ using namespace sensors_fusion;
 using namespace visualization_msgs;
 using namespace tracking;
 
+static int64_t gtm()
+{
+    struct timeval tm;
+    gettimeofday(&tm, 0);
+    // return us
+    int64_t re = (((int64_t)tm.tv_sec) * 1000 * 1000 + tm.tv_usec);
+    return re;
+}
+
 void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
                          ObjectTrackArray& obj_track_array)
 {
@@ -60,7 +69,7 @@ public:
     cloud_sub_(node, "/kitti/velo/pointcloud", 10),
     image_sub_(node, "/darknet_ros/image_with_bboxes", 10),
     object_array_sub_(node, "/detection/object_array", 10),
-    sync_(MySyncPolicy(10), cloud_sub_, image_sub_, object_array_sub_)
+    sync_(MySyncPolicy(2), cloud_sub_, image_sub_, object_array_sub_)
   {
     is_initialized_ = false;
     vis_marker_pub_ = node.advertise<Marker>("/viz/visualization_marker", 1);
@@ -88,6 +97,8 @@ public:
       return;
 
     // Initialize
+    ros::WallTime start_, end_;
+    start_ = ros::WallTime::now();
     if(is_initialized_){
       ukf.predict(time_stamp);
       ukf.update(obj_track_array[0]);
@@ -97,6 +108,10 @@ public:
       ukf.initialize(id, obj_track_array[0], time_stamp);
       is_initialized_ = true;
     }
+    end_ = ros::WallTime::now();
+    // print results
+    double execution_time = (end_ - start_).toNSec() * 1e-3;
+    ROS_INFO_STREAM("Exectution time (us): " << execution_time);
 
     sensors_fusion::ObjectTrackArray object_track;
     getObjectTrackArray(object_track, time_stamp);
@@ -148,7 +163,7 @@ public:
     }
     catch(tf::TransformException& ex){
       ROS_ERROR("Received an exception trying to transform a point from"
-          "\"velo_link\" to \"world\": %s", ex.what());
+          "\"world\" to \"velo_link\": %s", ex.what());
     }
 
     track_msg.width = track.geo.width;
@@ -195,19 +210,22 @@ public:
         velo_pose.header.stamp = ros::Time(time_stamp);
         velo_pose.pose.position = obj_array[i].velo_pos.point;
         velo_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,obj_array[i].orientation);
-        listener.waitForTransform("world", "velo_link", ros::Time(time_stamp),ros::Duration(1.0));
-        listener.transformPose("world",
-                        velo_pose,
-                        world_pose);
+//        listener.waitForTransform("world", "velo_link", ros::Time(time_stamp),ros::Duration(1.0));
+//        listener.transformPose("world",
+//                        velo_pose,
+//                        world_pose);
+        tfBuffer_.transform<geometry_msgs::PoseStamped>(velo_pose, world_pose, "world", ros::Duration(1.0));
         obj_array[i].world_pos.header.frame_id = "world";
         obj_array[i].world_pos.header.stamp = velo_pose.header.stamp;
         obj_array[i].world_pos.point = world_pose.pose.position;
         obj_array[i].heading = tf::getYaw(world_pose.pose.orientation);
       }
+      return true;
     }
     catch(tf::TransformException& ex){
       ROS_ERROR("Received an exception trying to transform a point from"
           "\"velo_link\" to \"world\": %s", ex.what());
+      return false;
     }
   }
 
