@@ -10,7 +10,6 @@
             required="true"
            args= "-d $(arg directory) -s 0000 -f 10 -a 1"
  
-            output="screen"
             />
             
    <node   name="tracking_demo_node" pkg="tracking_demo_node" type="tracking_demo_node"

@@ -74,6 +74,7 @@ public:
     is_initialized_ = false;
     vis_marker_pub_ = node.advertise<Marker>("/viz/visualization_marker", 1);
 
+    ROS_INFO_STREAM("Entering in UKF tracking...");
     sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2,_3));
   }
 
