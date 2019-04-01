@@ -19,4 +19,10 @@
             output="screen"
             />
             
+    <!-- Launch RViz-->
+	<arg  name="rviz" default="$(find tracking_demo_node)/cfg/tracking_demo.rviz" />
+    <node pkg="rviz" type="rviz" name="rviz"
+            args="-d $(arg rviz)" output="screen"
+    />
+
 </launch>
