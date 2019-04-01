@@ -65,6 +65,9 @@
   <exec_depend>tf</exec_depend>
   <exec_depend>tf2</exec_depend>
   <depend>iv_dynamicobject_msgs</depend>
+  <depend>darknet_ros_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

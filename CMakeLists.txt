@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   tf
   tf2
+  tf2_ros
+  tf2_geometry_msgs
   iv_dynamicobject_msgs
 )
 
