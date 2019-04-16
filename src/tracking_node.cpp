@@ -34,6 +34,9 @@ using namespace sensors_fusion;
 using namespace visualization_msgs;
 using namespace tracking;
 
+// Whether save groundtruth data and tracked results for analyzing
+static bool _is_save_data = true;
+
 static int64_t gtm()
 {
     struct timeval tm;
@@ -97,6 +100,17 @@ public:
     if(!transformCoordinate(obj_track_array, time_stamp))
       return;
 
+    if (_is_save_data) {// Saving groundtruth
+      FILE* fp_groundtruth = fopen("/home/zhanghm/Test/catkin_ws_dev/groundtruth.txt", "a");
+      fprintf(fp_groundtruth, "%.9f %.3f %.3f %.3f %.3f\n",
+              time_stamp,
+              obj_track_array[0].world_pos.point.x,
+              obj_track_array[0].world_pos.point.y,
+              obj_track_array[0].world_pos.point.z,
+              obj_track_array[0].heading);
+      fclose(fp_groundtruth);
+    }
+
     // Initialize
     ros::WallTime start_, end_;
     start_ = ros::WallTime::now();
@@ -147,6 +161,14 @@ public:
 
     track_msg.velocity = track.sta.x[2];
     track_msg.heading = track.sta.x[3];
+
+    if (_is_save_data) {// Saving track results
+      FILE* fp_track = fopen("/home/zhanghm/Test/catkin_ws_dev/track_results.txt", "a");
+      fprintf(fp_track, "%.9f %.3f %.3f %.3f %.3f %.3f\n",
+                         time_stamp, track.sta.x[0], track.sta.x[1], track.sta.x[2],
+                         track.sta.x[3],track.sta.x[4]);
+      fclose(fp_track);
+    }
 
     try{
       geometry_msgs::PoseStamped world_pose, velo_pose;
