@@ -70,19 +70,17 @@ public:
   TrackingProcess(ros::NodeHandle& node):
     tfListener_(tfBuffer_, node),
     cloud_sub_(node, "/kitti/velo/pointcloud", 10),
-    image_sub_(node, "/darknet_ros/image_with_bboxes", 10),
     object_array_sub_(node, "/detection/object_array", 10),
-    sync_(MySyncPolicy(2), cloud_sub_, image_sub_, object_array_sub_)
+    sync_(MySyncPolicy(2), cloud_sub_, object_array_sub_)
   {
     is_initialized_ = false;
     vis_marker_pub_ = node.advertise<Marker>("/viz/visualization_marker", 1);
 
     ROS_INFO_STREAM("Entering in UKF tracking...");
-    sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2,_3));
+    sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2));
   }
 
   void syncCallback(const sensor_msgs::PointCloud2ConstPtr& lidar_msg,
-      const darknet_ros_msgs::ImageWithBBoxesConstPtr& image_msg,
       const iv_dynamicobject_msgs::ObjectArrayConstPtr& obj_msg)
   {
     double time_stamp = obj_msg->header.stamp.toSec();
@@ -90,7 +88,6 @@ public:
     // Convert object array message to object track array type
     ROS_WARN_STREAM("Enter in syncCallback..."<<std::setprecision(20)<<
         lidar_msg->header.stamp.toSec()<<" "<<
-        image_msg->header.stamp.toSec()<<" "<<
         obj_msg->header.stamp.toSec());
     ObjectTrackArray obj_track_array;
     toObjectTrackArray(obj_msg, obj_track_array);
@@ -313,10 +310,8 @@ public:
 
 private:
   message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub_;
-  message_filters::Subscriber<darknet_ros_msgs::ImageWithBBoxes> image_sub_;
   message_filters::Subscriber<iv_dynamicobject_msgs::ObjectArray> object_array_sub_;
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2,
-      darknet_ros_msgs::ImageWithBBoxes, iv_dynamicobject_msgs::ObjectArray> MySyncPolicy;
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, iv_dynamicobject_msgs::ObjectArray> MySyncPolicy;
   message_filters::Synchronizer<MySyncPolicy> sync_;
 
   tf::TransformListener listener;
