@@ -217,6 +217,12 @@ public:
         "height is "<<track_msg.height);
   }
 
+  /*!
+   * @brief From local pose to world pose transformation, using TF2
+   * @param obj_array
+   * @param time_stamp
+   * @return
+   */
   bool transformCoordinate(sensors_fusion::ObjectTrackArray& obj_array, double time_stamp)
   {
     // Transform objects in camera and world frame
@@ -237,18 +243,17 @@ public:
     try{
       for(size_t i = 0; i < obj_array.size(); ++i){
         geometry_msgs::PoseStamped  velo_pose, world_pose;
+        // Create local pose
         velo_pose.header.frame_id = "velo_link";
         velo_pose.header.stamp = ros::Time(time_stamp);
         velo_pose.pose.position = obj_array[i].velo_pos.point;
         velo_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,obj_array[i].orientation);
-//        listener.waitForTransform("world", "velo_link", ros::Time(time_stamp),ros::Duration(1.0));
-//        listener.transformPose("world",
-//                        velo_pose,
-//                        world_pose);
         if(!tfBuffer_.canTransform("world","velo_link",ros::Time(time_stamp), ros::Duration(0.2)))
           ROS_ERROR("No transform");
         else
           ROS_WARN("Has transform");
+
+        // Do transform
         tfBuffer_.transform<geometry_msgs::PoseStamped>(velo_pose, world_pose, "world", ros::Duration(0.2));
         obj_array[i].world_pos.header.frame_id = "world";
         obj_array[i].world_pos.header.stamp = velo_pose.header.stamp;
