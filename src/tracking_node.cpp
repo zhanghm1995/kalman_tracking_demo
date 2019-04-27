@@ -34,6 +34,9 @@ using namespace sensors_fusion;
 using namespace visualization_msgs;
 using namespace tracking;
 
+// Whether save groundtruth data and tracked results for analyzing
+static bool _is_save_data = true;
+
 static int64_t gtm()
 {
     struct timeval tm;
@@ -67,19 +70,17 @@ public:
   TrackingProcess(ros::NodeHandle& node):
     tfListener_(tfBuffer_, node),
     cloud_sub_(node, "/kitti/velo/pointcloud", 10),
-    image_sub_(node, "/darknet_ros/image_with_bboxes", 10),
     object_array_sub_(node, "/detection/object_array", 10),
-    sync_(MySyncPolicy(2), cloud_sub_, image_sub_, object_array_sub_)
+    sync_(MySyncPolicy(2), cloud_sub_, object_array_sub_)
   {
     is_initialized_ = false;
     vis_marker_pub_ = node.advertise<Marker>("/viz/visualization_marker", 1);
 
     ROS_INFO_STREAM("Entering in UKF tracking...");
-    sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2,_3));
+    sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2));
   }
 
   void syncCallback(const sensor_msgs::PointCloud2ConstPtr& lidar_msg,
-      const darknet_ros_msgs::ImageWithBBoxesConstPtr& image_msg,
       const iv_dynamicobject_msgs::ObjectArrayConstPtr& obj_msg)
   {
     double time_stamp = obj_msg->header.stamp.toSec();
@@ -87,7 +88,6 @@ public:
     // Convert object array message to object track array type
     ROS_WARN_STREAM("Enter in syncCallback..."<<std::setprecision(20)<<
         lidar_msg->header.stamp.toSec()<<" "<<
-        image_msg->header.stamp.toSec()<<" "<<
         obj_msg->header.stamp.toSec());
     ObjectTrackArray obj_track_array;
     toObjectTrackArray(obj_msg, obj_track_array);
@@ -96,6 +96,17 @@ public:
     // Transform coordinate
     if(!transformCoordinate(obj_track_array, time_stamp))
       return;
+
+    if (_is_save_data) {// Saving groundtruth
+      FILE* fp_groundtruth = fopen("/home/zhanghm/Test_code/catkin_ws_dev/groundtruth.txt", "a");
+      fprintf(fp_groundtruth, "%.9f %.3f %.3f %.3f %.3f\n",
+              time_stamp,
+              obj_track_array[0].world_pos.point.x,
+              obj_track_array[0].world_pos.point.y,
+              obj_track_array[0].world_pos.point.z,
+              obj_track_array[0].heading);
+      fclose(fp_groundtruth);
+    }
 
     // Initialize
     ros::WallTime start_, end_;
@@ -147,6 +158,14 @@ public:
 
     track_msg.velocity = track.sta.x[2];
     track_msg.heading = track.sta.x[3];
+
+    if (_is_save_data) {// Saving track results
+      FILE* fp_track = fopen("/home/zhanghm/Test_code/catkin_ws_dev/track_results.txt", "a");
+      fprintf(fp_track, "%.9f %.3f %.3f %.3f %.3f %.3f\n",
+                         time_stamp, track.sta.x[0], track.sta.x[1], track.sta.x[2],
+                         track.sta.x[3],track.sta.x[4]);
+      fclose(fp_track);
+    }
 
     try{
       geometry_msgs::PoseStamped world_pose, velo_pose;
@@ -291,10 +310,8 @@ public:
 
 private:
   message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub_;
-  message_filters::Subscriber<darknet_ros_msgs::ImageWithBBoxes> image_sub_;
   message_filters::Subscriber<iv_dynamicobject_msgs::ObjectArray> object_array_sub_;
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2,
-      darknet_ros_msgs::ImageWithBBoxes, iv_dynamicobject_msgs::ObjectArray> MySyncPolicy;
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, iv_dynamicobject_msgs::ObjectArray> MySyncPolicy;
   message_filters::Synchronizer<MySyncPolicy> sync_;
 
   tf::TransformListener listener;
