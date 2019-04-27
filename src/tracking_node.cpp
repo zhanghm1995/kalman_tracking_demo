@@ -98,7 +98,7 @@ public:
       return;
 
     if (_is_save_data) {// Saving groundtruth
-      FILE* fp_groundtruth = fopen("/home/zhanghm/Test/catkin_ws_dev/groundtruth.txt", "a");
+      FILE* fp_groundtruth = fopen("/home/zhanghm/Test_code/catkin_ws_dev/groundtruth.txt", "a");
       fprintf(fp_groundtruth, "%.9f %.3f %.3f %.3f %.3f\n",
               time_stamp,
               obj_track_array[0].world_pos.point.x,
@@ -160,7 +160,7 @@ public:
     track_msg.heading = track.sta.x[3];
 
     if (_is_save_data) {// Saving track results
-      FILE* fp_track = fopen("/home/zhanghm/Test/catkin_ws_dev/track_results.txt", "a");
+      FILE* fp_track = fopen("/home/zhanghm/Test_code/catkin_ws_dev/track_results.txt", "a");
       fprintf(fp_track, "%.9f %.3f %.3f %.3f %.3f %.3f\n",
                          time_stamp, track.sta.x[0], track.sta.x[1], track.sta.x[2],
                          track.sta.x[3],track.sta.x[4]);
