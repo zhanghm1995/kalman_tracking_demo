@@ -49,17 +49,27 @@ static int64_t gtm()
 void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
                          ObjectTrackArray& obj_track_array)
 {
-  for(size_t i = 0; i < msg->list.size(); ++i){
+  for (size_t i = 0; i < msg->list.size(); ++i) {
     ObjectTrack obj;
     obj.length = msg->list[i].length;
     obj.width = msg->list[i].width;
     obj.height = msg->list[i].height;
 
+    // Get velo_pos
     obj.velo_pos.header.frame_id = "velo_link";
     obj.velo_pos.point.x = msg->list[i].velo_pose.point.x;
     obj.velo_pos.point.y = msg->list[i].velo_pose.point.y;
     obj.velo_pos.point.z = msg->list[i].velo_pose.point.z;
+    // Get world pos
+    obj.world_pos.header = msg->list[i].world_pose.header;
+    obj.world_pos.point.x = msg->list[i].world_pose.point.x;
+    obj.world_pos.point.y = msg->list[i].world_pose.point.y;
+    obj.world_pos.point.z = msg->list[i].world_pose.point.z;
+    // Get heading
     obj.orientation = msg->list[i].heading;
+    // Get velocity
+    obj.velocity = msg->list[i].velocity;
+
     obj_track_array.push_back(obj);
   }
 }
