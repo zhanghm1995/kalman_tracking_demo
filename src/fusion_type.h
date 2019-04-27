@@ -36,7 +36,7 @@ struct ObjectTrack
 
   float length, width, height;
 
-  // Objects center Geometry position info in lidar(base) coordinate
+  // Objects center Geometry position info in local(lidar or vehicle) coordinate
   geometry_msgs::PointStamped velo_pos;
 
   // Geometry center position info in world coordinate

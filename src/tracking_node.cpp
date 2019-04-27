@@ -35,7 +35,7 @@ using namespace visualization_msgs;
 using namespace tracking;
 
 // Whether save groundtruth data and tracked results for analyzing
-static bool _is_save_data = true;
+static bool _is_save_data = false;
 
 static int64_t gtm()
 {
@@ -56,7 +56,7 @@ void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
     obj.height = msg->list[i].height;
 
     // Get velo_pos
-    obj.velo_pos.header.frame_id = "velo_link";
+    obj.velo_pos.header.frame_id = "base_link";
     obj.velo_pos.point.x = msg->list[i].velo_pose.point.x;
     obj.velo_pos.point.y = msg->list[i].velo_pose.point.y;
     obj.velo_pos.point.z = msg->list[i].velo_pose.point.z;
@@ -103,9 +103,9 @@ public:
     toObjectTrackArray(obj_msg, obj_track_array);
 
 
-    // Transform coordinate
-    if(!transformCoordinate(obj_track_array, time_stamp))
-      return;
+//    // Transform coordinate
+//    if(!transformCoordinate(obj_track_array, time_stamp))
+//      return;
 
     if (_is_save_data) {// Saving groundtruth
       FILE* fp_groundtruth = fopen("/home/zhanghm/Test_code/catkin_ws_dev/groundtruth.txt", "a");
@@ -157,13 +157,13 @@ public:
     track_msg.world_pos.point.z = track.sta.z;
 
 //    try{
-//      listener.transformPoint("velo_link",
+//      listener.transformPoint("base_link",
 //          track_msg.world_pos,
 //          track_msg.velo_pos);
 //    }
 //    catch(tf::TransformException& ex){
 //      ROS_ERROR("Received an exception trying to transform a point from"
-//          "\"velo_link\" to \"world\": %s", ex.what());
+//          "\"base_link\" to \"world\": %s", ex.what());
 //    }
 
     track_msg.velocity = track.sta.x[2];
@@ -183,18 +183,18 @@ public:
       world_pose.header.stamp = ros::Time(time_stamp);
       world_pose.pose.position = track_msg.world_pos.point;
       world_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,track_msg.heading);
-      listener.transformPose("velo_link",
+      listener.transformPose("base_link",
           world_pose,
           velo_pose);
 
-      track_msg.velo_pos.header.frame_id = "velo_link";
+      track_msg.velo_pos.header.frame_id = "base_link";
       track_msg.velo_pos.header.stamp = world_pose.header.stamp;
       track_msg.velo_pos.point = velo_pose.pose.position;
       track_msg.heading = tf::getYaw(velo_pose.pose.orientation);
     }
     catch(tf::TransformException& ex){
       ROS_ERROR("Received an exception trying to transform a point from"
-          "\"world\" to \"velo_link\": %s", ex.what());
+          "\"world\" to \"base_link\": %s", ex.what());
     }
 
     track_msg.width = track.geo.width;
@@ -244,11 +244,11 @@ public:
       for(size_t i = 0; i < obj_array.size(); ++i){
         geometry_msgs::PoseStamped  velo_pose, world_pose;
         // Create local pose
-        velo_pose.header.frame_id = "velo_link";
+        velo_pose.header.frame_id = "base_link";
         velo_pose.header.stamp = ros::Time(time_stamp);
         velo_pose.pose.position = obj_array[i].velo_pos.point;
         velo_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,obj_array[i].orientation);
-        if(!tfBuffer_.canTransform("world","velo_link",ros::Time(time_stamp), ros::Duration(0.2)))
+        if(!tfBuffer_.canTransform("world","base_link",ros::Time(time_stamp), ros::Duration(0.2)))
           ROS_ERROR("No transform");
         else
           ROS_WARN("Has transform");
@@ -264,7 +264,7 @@ public:
     }
     catch(tf::TransformException& ex){
       ROS_ERROR("Received an exception trying to transform a point from"
-          "\"velo_link\" to \"world\": %s", ex.what());
+          "\"base_link\" to \"world\": %s", ex.what());
       return false;
     }
   }
@@ -280,7 +280,7 @@ public:
       if(obj_array[i].velocity < 0.5)//TODO: maybe add is_static flag member
         continue;
 
-      arrowsG.header.frame_id = "velo_link";
+      arrowsG.header.frame_id = "base_link";
 //      arrowsG.header.stamp = ros::Time(time_stamp);
       arrowsG.ns = "arrows";
       arrowsG.action = visualization_msgs::Marker::ADD;
