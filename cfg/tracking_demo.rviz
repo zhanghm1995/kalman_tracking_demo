@@ -30,7 +30,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -79,7 +79,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0700000003
       Style: Flat Squares
-      Topic: /kitti/velo/pointcloud
+      Topic: /base_link/pointcloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -96,13 +96,23 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        base_link:
+          Value: true
+        front_link:
+          Value: true
+        world:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        world:
+          base_link:
+            {}
+          front_link:
+            {}
       Update Interval: 0
       Value: true
     - Class: rviz/Marker
@@ -110,14 +120,14 @@ Visualization Manager:
       Marker Topic: /viz/visualization_marker
       Name: Marker
       Namespaces:
-        {}
+        arrows: true
       Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: velo_link
+    Fixed Frame: base_link
     Frame Rate: 10
   Name: root
   Tools:
@@ -138,25 +148,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 96.5213318
+      Distance: 54.4394875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.81795633
-        Y: 3.43668103
-        Z: -0.338561565
+        X: 11.194458
+        Y: -9.20957756
+        Z: -0.329962909
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.4297967
+      Pitch: 0.72479713
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.1217792
+      Yaw: 3.04177999
     Saved: ~
 Window Geometry:
   Displays:

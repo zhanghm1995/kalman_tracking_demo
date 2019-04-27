@@ -78,8 +78,7 @@ void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
   }
 }
 
-void TransformCloud(ros::Publisher& pub, const sensor_msgs::PointCloud2ConstPtr& lidar_msg,
-                    bool is_kitti_dataset = true)
+void TransformCloud(ros::Publisher& pub, const sensor_msgs::PointCloud2ConstPtr& lidar_msg)
 {
   // Define transformation matrix
   Eigen::Affine3f transform_matrix = Eigen::Affine3f::Identity();
@@ -120,7 +119,7 @@ public:
   void syncCallback(const sensor_msgs::PointCloud2ConstPtr& lidar_msg,
       const iv_dynamicobject_msgs::ObjectArrayConstPtr& obj_msg)
   {
-    double time_stamp = obj_msg->header.stamp.toSec();
+    double time_stamp = lidar_msg->header.stamp.toSec();
 
     // Convert object array message to object track array type
     ROS_WARN_STREAM("Enter in syncCallback..."<<std::setprecision(20)<<
@@ -128,7 +127,7 @@ public:
         obj_msg->header.stamp.toSec());
     ObjectTrackArray obj_track_array;
     toObjectTrackArray(obj_msg, obj_track_array);
-//    TransformCloud(cloud_pub_, lidar_msg, )
+    TransformCloud(cloud_pub_, lidar_msg);
 
 //    // Transform coordinate
 //    if(!transformCoordinate(obj_track_array, time_stamp))
