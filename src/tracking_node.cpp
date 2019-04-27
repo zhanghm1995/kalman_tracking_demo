@@ -25,6 +25,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/timer.hpp>
 #include <boost/math/special_functions/round.hpp>
+// PCL
+#include <pcl/common/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
 
 #include <darknet_ros_msgs/ImageWithBBoxes.h>
 #include "iv_dynamicobject_msgs/ObjectArray.h"
@@ -74,6 +78,28 @@ void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
   }
 }
 
+void TransformCloud(ros::Publisher& pub, const sensor_msgs::PointCloud2ConstPtr& lidar_msg,
+                    bool is_kitti_dataset = true)
+{
+  // Define transformation matrix
+  Eigen::Affine3f transform_matrix = Eigen::Affine3f::Identity();
+  // Our own lab capturing lidar data, x-rightward, y-forward
+    // The same rotation matrix as before; theta radians around Z axis
+    transform_matrix.rotate (Eigen::AngleAxisf (-M_PI/2, Eigen::Vector3f::UnitZ()));
+  // Executing the transformation
+   pcl::PointCloud<pcl::PointXYZI>::Ptr tempcloud(new pcl::PointCloud<pcl::PointXYZI>),
+                                        points(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::fromROSMsg(*lidar_msg, *tempcloud);
+  pcl::transformPointCloud (*tempcloud, *points, transform_matrix);
+
+  //workaround for the PCL headers... http://wiki.ros.org/hydro/Migration#PCL
+  sensor_msgs::PointCloud2 pc2;
+  pc2.header.frame_id = "base_link"; //ros::this_node::getName();
+  pc2.header.stamp = lidar_msg->header.stamp;
+  points->header = pcl_conversions::toPCL(pc2.header);
+  pub.publish(points);
+}
+
 class TrackingProcess
 {
 public:
@@ -87,6 +113,7 @@ public:
     vis_marker_pub_ = node.advertise<Marker>("/viz/visualization_marker", 1);
 
     ROS_INFO_STREAM("Entering in UKF tracking...");
+    cloud_pub_  = node.advertise<pcl::PointCloud<pcl::PointXYZI> >  ("/base_link/pointcloud", 1, true);
     sync_.registerCallback(boost::bind(&TrackingProcess::syncCallback, this, _1, _2));
   }
 
@@ -101,7 +128,7 @@ public:
         obj_msg->header.stamp.toSec());
     ObjectTrackArray obj_track_array;
     toObjectTrackArray(obj_msg, obj_track_array);
-
+//    TransformCloud(cloud_pub_, lidar_msg, )
 
 //    // Transform coordinate
 //    if(!transformCoordinate(obj_track_array, time_stamp))
@@ -335,6 +362,7 @@ private:
   tf2_ros::TransformListener tfListener_;
 
   ros::Publisher vis_marker_pub_;
+  ros::Publisher cloud_pub_;
 
   bool is_initialized_;
   UnscentedKF ukf;
@@ -344,6 +372,7 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "tracking_node");
   ros::NodeHandle node;
+
   TrackingProcess track_process(node);
 
   ros::spin();
