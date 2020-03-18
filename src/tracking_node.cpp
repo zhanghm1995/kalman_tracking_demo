@@ -70,7 +70,8 @@ void toObjectTrackArray(const iv_dynamicobject_msgs::ObjectArray::ConstPtr& msg,
     obj.world_pos.point.y = msg->list[i].world_pose.point.y;
     obj.world_pos.point.z = msg->list[i].world_pose.point.z;
     // Get heading
-    obj.orientation = msg->list[i].heading;
+//    obj.orientation = msg->list[i].heading;
+    obj.heading = msg->list[i].heading;
     // Get velocity
     obj.velocity = msg->list[i].velocity;
 
@@ -135,12 +136,13 @@ public:
 
     if (_is_save_data) {// Saving groundtruth
       FILE* fp_groundtruth = fopen("/home/zhanghm/Test_code/catkin_ws_dev/groundtruth.txt", "a");
-      fprintf(fp_groundtruth, "%.9f %.3f %.3f %.3f %.3f\n",
+      fprintf(fp_groundtruth, "%.9f %.3f %.3f %.3f %.3f %.5f\n",
               time_stamp,
               obj_track_array[0].world_pos.point.x,
               obj_track_array[0].world_pos.point.y,
               obj_track_array[0].world_pos.point.z,
-              obj_track_array[0].heading);
+              obj_track_array[0].heading,
+              obj_track_array[0].velocity);
       fclose(fp_groundtruth);
     }
 
@@ -203,6 +205,7 @@ public:
       fclose(fp_track);
     }
 
+    // From world coordinates to local
     try{
       geometry_msgs::PoseStamped world_pose, velo_pose;
       world_pose.header.frame_id = "world";
@@ -237,7 +240,6 @@ public:
 
     ROS_INFO_STREAM("velocity is "<<track_msg.velocity<<" "<<
         "heading is "<<track_msg.heading<<" "<<
-        "orientation is "<<track_msg.orientation<<" "<<
         "length is "<<track_msg.length<<" "<<
         "width is "<<track_msg.width<<" "<<
         "height is "<<track_msg.height);
@@ -281,6 +283,7 @@ public:
 
         // Do transform
         tfBuffer_.transform<geometry_msgs::PoseStamped>(velo_pose, world_pose, "world", ros::Duration(0.2));
+
         obj_array[i].world_pos.header.frame_id = "world";
         obj_array[i].world_pos.header.stamp = velo_pose.header.stamp;
         obj_array[i].world_pos.point = world_pose.pose.position;
@@ -303,8 +306,8 @@ public:
       visualization_msgs::Marker arrowsG;
 //      arrowsG.lifetime = ros::Duration(0.2);
 
-      if(obj_array[i].velocity < 0.5)//TODO: maybe add is_static flag member
-        continue;
+//      if(obj_array[i].velocity < 0.5)//TODO: maybe add is_static flag member
+//        continue;
 
       arrowsG.header.frame_id = "base_link";
 //      arrowsG.header.stamp = ros::Time(time_stamp);

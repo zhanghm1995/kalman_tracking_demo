@@ -98,7 +98,7 @@ void UnscentedKF::initialize(long long id, const sensors_fusion::ObjectTrack& ob
   tr.sta.x = VectorXd::Zero(params_.tra_dim_x);
   tr.sta.x[0] = obj.world_pos.point.x;
   tr.sta.x[1] = obj.world_pos.point.y;
-  tr.sta.x[3] = obj.heading;
+//  tr.sta.x[3] = obj.heading;
   tr.sta.z = obj.world_pos.point.z;
   tr.sta.P = MatrixXd::Zero(params_.tra_dim_x, params_.tra_dim_x);
   tr.sta.P << params_.p_init_x,  0,  0,  0,  0,
