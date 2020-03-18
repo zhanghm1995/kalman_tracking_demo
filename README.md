@@ -1,5 +1,5 @@
 # Tracking_demo_node
-This is a ROS package for validate UKF tracking performance in 3D object.
+This is a ROS package to validate UKF tracking performance in 3D object.
 
 ## Introduction
 
