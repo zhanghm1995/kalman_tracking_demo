@@ -30,4 +30,4 @@ roslaunch tracking_demo_node tracking_demo_node.launch
 6. then using `predict` and `update` functions to update target object states.
 
 ## Bug reporting
-Please use github's issue tracker or email me use `zhanghm1995@qq.com` to report bugs.
+Please use github's issue tracker or email me use `zhanghm_1995@qq.com` to report bugs.

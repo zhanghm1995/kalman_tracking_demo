@@ -20,8 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Boost REQUIRED COMPONENTS thread system program_options)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.9 REQUIRED)
 
 ###################################
 ## catkin specific configuration ##
@@ -42,13 +43,13 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}	
+  ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
 )
@@ -56,5 +57,3 @@ include_directories(
 add_executable(tracking_demo_node  src/tracking_node.cpp
 								   src/ukf.cpp)
 target_link_libraries(tracking_demo_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_LIBRARIES})
-			     
-
